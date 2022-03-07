@@ -17,3 +17,7 @@
 
 config.toml
 
+# executable
+lifecycle-s3
+
+

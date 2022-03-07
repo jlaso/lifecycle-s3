@@ -1,6 +1,8 @@
 bucket = "your-bucket-name"
 region = "us-east-1"
 prefix = "folder-to-review/subfolder/etc/"
+mode = "move-to-trash"
+filepattern = ""
 
 [rules]
 
@@ -8,10 +10,10 @@ prefix = "folder-to-review/subfolder/etc/"
     rule = "(file_age > 365) && last_day_of_year(file_time)"
 
     [rules.keep-monthly-12]
-    rule = "(file_age <= 365) && last_day_of_month(file_time)"
+    rule = "(file_age > 7) && (file_age <= 365) && last_day_of_month(file_time)"
 
     [rules.keep-8-weeks]
-    rule = "(file_age <= 56) && last_day_of_week(file_time)"
+    rule = "(file_age > 7) && (file_age <= 56) && last_day_of_week(file_time)"
 
     [rules.keep-last-7-days]
-    rule = "(file_age < 7)"
+    rule = "(file_age <= 7)"

@@ -58,8 +58,13 @@ func checkFiles(filename string) error {
 				if toKeep {
 					fmt.Println("   keep it !")
 				} else {
-					fmt.Println("   marking it for deletion !")
-					err = markForDeletion(cl, cfg.Bucket, *s.Key)
+					if cfg.Mode == "move-to-trash" {
+						fmt.Println("   moving it to _TRASH_ !")
+						err = moveToTrash(cl, cfg.Bucket, *s.Key)
+					} else if cfg.Mode == "mark-with-tag" {
+						fmt.Println("   marking it for deletion !")
+						err = markForDeletion(cl, cfg.Bucket, *s.Key)
+					}
 					if err != nil {
 						return err
 					}
@@ -73,7 +78,7 @@ func checkFiles(filename string) error {
 }
 
 func usage() {
-	fmt.Fprintf(os.Stderr, "usage: lifecycle-s3 configfile\n")
+	fmt.Fprintf(os.Stderr, "usage: lifecycle-s3 configfiles...\n")
 	flag.PrintDefaults()
 	os.Exit(2)
 }

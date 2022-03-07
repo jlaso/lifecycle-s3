@@ -6,10 +6,12 @@ import (
 )
 
 type tomlConfig struct {
-	Bucket string          `toml:"bucket"`
-	Region string          `toml:"region"`
-	Prefix string          `toml:"prefix"`
-	Rules  map[string]rule //`toml:"rules"`
+	Bucket      string          `toml:"bucket"`
+	Region      string          `toml:"region"`
+	Prefix      string          `toml:"prefix"`
+	Mode        string          `toml:"mode"`
+	FilePattern string          `toml:"filepattern"`
+	Rules       map[string]rule //`toml:"rules"`
 }
 
 type rule struct {
