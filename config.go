@@ -18,6 +18,9 @@ type rule struct {
 	Rule string `toml:"rule"`
 }
 
+var verbose = false
+var sandbox = false
+
 func readConfig(fname string) (tomlConfig, error) {
 	var cfg tomlConfig
 	content, err := ioutil.ReadFile(fname)

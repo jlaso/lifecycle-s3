@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
-	_ "github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"log"
 	"os"
@@ -21,49 +20,57 @@ func checkFiles(filename string) error {
 	}
 
 	if len(cfg.Rules) > 0 {
-
 		sess := session.Must(session.NewSession())
-		//client := s3manager.
 		cl := s3.New(sess, &aws.Config{
 			Region:                         &cfg.Region,
 			DisableRestProtocolURICleaning: aws.Bool(true),
 		})
-		delimiter := "/"
 		req, resp := cl.ListObjectsRequest(&s3.ListObjectsInput{
 			Bucket:    &cfg.Bucket,
-			Delimiter: &delimiter,
+			Delimiter: aws.String("/"),
 			Prefix:    &cfg.Prefix,
 		})
 
 		var toKeep bool
 		err = req.Send()
 		if err == nil { // resp is now filled
-			//fmt.Println(resp.Contents)
 			for i, s := range resp.Contents {
 				toKeep = false
-				//fmt.Println("************************************************************")
-				//fmt.Printf("%d: %s %s\n", i, s.LastModified.Format("2006-01-02"), *s.Key)
-				fmt.Printf("%d: %s %s", i, s.LastModified.Format("2006-01-02"), *s.Key)
-				//for n, r := range cfg.Rules {
-				for _, r := range cfg.Rules {
-					toKeep = toKeep || check(r.Rule, fileInfo{Name: *s.Key, Date: *s.LastModified})
-					//fmt.Printf("\t%t\t%d\t%d\t%s %s\n",
-					//	!toKeep,
-					//	(*s.LastModified).Weekday(),
-					//	fileAge(*s.LastModified),
-					//	n,
-					//	r.Rule,
-					//)
+				if verbose {
+					fmt.Println("************************************************************")
+					//fmt.Printf("%d: %s %s\n", i, s.LastModified.Format("2006-01-02"), *s.Key)
+				}
+				fmt.Printf("%d: %s %s\n", i, s.LastModified.Format("2006-01-02"), *s.Key)
+				for n, r := range cfg.Rules {
+					fi := fileInfo{Name: *s.Key, Date: *s.LastModified}
+					fi.Date = getFileDate(fi, cfg.FilePattern)
+					toKeep = keepIt(r.Rule, fi)
+					if verbose {
+						fmt.Printf("\t%t\t%s\t%d\t%s %s\n",
+							toKeep,
+							(fi.Date).Weekday().String()[0:3],
+							fileAge(fi.Date),
+							n,
+							r.Rule,
+						)
+					}
+					if toKeep {
+						break
+					}
 				}
 				if toKeep {
-					fmt.Println("   keep it !")
+					fmt.Println("\t\t   keep it !")
 				} else {
 					if cfg.Mode == "move-to-trash" {
-						fmt.Println("   moving it to _TRASH_ !")
-						err = moveToTrash(cl, cfg.Bucket, *s.Key)
+						fmt.Println("\t\t   moving it to _TRASH_ !")
+						if !sandbox {
+							err = moveToTrash(cl, cfg.Bucket, *s.Key)
+						}
 					} else if cfg.Mode == "mark-with-tag" {
-						fmt.Println("   marking it for deletion !")
-						err = markForDeletion(cl, cfg.Bucket, *s.Key)
+						fmt.Println("\t\t   marking it for deletion !")
+						if !sandbox {
+							err = markForDeletion(cl, cfg.Bucket, *s.Key)
+						}
 					}
 					if err != nil {
 						return err
@@ -84,6 +91,8 @@ func usage() {
 }
 
 func main() {
+	flag.BoolVar(&verbose, "verbose", true, "show intermediate info")
+	flag.BoolVar(&sandbox, "sandbox", true, "show intermediate info")
 	flag.Usage = usage
 	flag.Parse()
 

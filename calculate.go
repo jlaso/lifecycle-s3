@@ -14,7 +14,7 @@ type fileInfo struct {
 	Date time.Time
 }
 
-func check(condition string, file fileInfo) bool {
+func keepIt(condition string, file fileInfo) bool {
 	e := env.NewEnv()
 
 	err := e.Define("file_age", fileAge(file.Date))
