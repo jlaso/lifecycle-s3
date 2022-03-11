@@ -7,13 +7,13 @@ filepattern = ""
 [rules]
 
     [rules.keep-last-of-year-2]
-    rule = "(file_age > 365) && last_day_of_year(file_time)"
+    rule = "last_day_of_year(file_time)"
 
     [rules.keep-monthly-12]
-    rule = "(file_age > 7) && (file_age <= 365) && last_day_of_month(file_time)"
+    rule = "(file_age <= 365) && last_day_of_month(file_time)"
 
     [rules.keep-8-weeks]
-    rule = "(file_age > 7) && (file_age <= 56) && last_day_of_week(file_time)"
+    rule = "(file_age <= 56) && last_day_of_week(file_time)"
 
     [rules.keep-last-7-days]
     rule = "(file_age <= 7)"

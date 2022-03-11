@@ -93,7 +93,7 @@ func main() {
 
 	args := flag.Args()
 	if len(args) < 1 {
-		fmt.Println("Input file is missing.")
+		fmt.Println("Config file is missing.")
 		os.Exit(1)
 	}
 	for _, f := range args {
