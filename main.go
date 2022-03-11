@@ -3,9 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
 	"log"
 	"os"
 )
@@ -13,6 +10,9 @@ import (
 func checkFiles(filename string) error {
 
 	cfg, err := readConfig(filename)
+	if err != nil {
+		return err
+	}
 
 	fmt.Printf("bucket name is %s, found %d rules \n", cfg.Bucket, len(cfg.Rules))
 	for i, a := range cfg.Rules {
@@ -20,68 +20,63 @@ func checkFiles(filename string) error {
 	}
 
 	if len(cfg.Rules) > 0 {
-		sess := session.Must(session.NewSession())
-		cl := s3.New(sess, &aws.Config{
-			Region:                         &cfg.Region,
-			DisableRestProtocolURICleaning: aws.Bool(true),
-		})
-		req, resp := cl.ListObjectsRequest(&s3.ListObjectsInput{
-			Bucket:    &cfg.Bucket,
-			Delimiter: aws.String("/"),
-			Prefix:    &cfg.Prefix,
-		})
+		var myS3 S3Instance
+		myS3.connect(cfg.Region)
 
-		var toKeep bool
-		err = req.Send()
-		if err == nil { // resp is now filled
-			for i, s := range resp.Contents {
-				toKeep = false
+		ch := make(chan *fileInfo)
+
+		go func() {
+			var keepIt bool
+			i := 1
+			for {
+				fi := <-ch
+				if fi == nil {
+					break
+				}
+				keepIt = false
 				if verbose {
 					fmt.Println("************************************************************")
-					//fmt.Printf("%d: %s %s\n", i, s.LastModified.Format("2006-01-02"), *s.Key)
 				}
-				fmt.Printf("%d: %s %s\n", i, s.LastModified.Format("2006-01-02"), *s.Key)
+				fmt.Printf("%d: %s %s\n", i, fi.Date.Format("2006-01-02"), fi.Name)
 				for n, r := range cfg.Rules {
-					fi := fileInfo{Name: *s.Key, Date: *s.LastModified}
-					fi.Date = getFileDate(fi, cfg.FilePattern)
-					toKeep = keepIt(r.Rule, fi)
+					fi.Date = getFileDate(*fi, cfg.FilePattern)
+					keepIt = fi.canBeKept(r.Rule)
 					if verbose {
 						fmt.Printf("\t%t\t%s\t%d\t%s %s\n",
-							toKeep,
+							keepIt,
 							(fi.Date).Weekday().String()[0:3],
 							fileAge(fi.Date),
 							n,
 							r.Rule,
 						)
 					}
-					if toKeep {
+					if keepIt {
 						break
 					}
 				}
-				if toKeep {
+				if keepIt {
 					fmt.Println("\t\t   keep it !")
 				} else {
 					if cfg.Mode == "move-to-trash" {
 						fmt.Println("\t\t   moving it to _TRASH_ !")
 						if !sandbox {
-							err = moveToTrash(cl, cfg.Bucket, *s.Key)
+							err = myS3.moveToTrash(cfg.Bucket, fi.Name)
 						}
 					} else if cfg.Mode == "mark-with-tag" {
 						fmt.Println("\t\t   marking it for deletion !")
 						if !sandbox {
-							err = markForDeletion(cl, cfg.Bucket, *s.Key)
+							err = myS3.markForDeletion(cfg.Bucket, fi.Name)
 						}
 					}
-					if err != nil {
-						return err
-					}
 				}
+				i++
 			}
-		} else {
-			return err
-		}
+		}()
+
+		err = myS3.walkFiles(cfg.Bucket, cfg.Prefix, ch)
+
 	}
-	return nil
+	return err
 }
 
 func usage() {

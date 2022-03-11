@@ -14,14 +14,14 @@ type fileInfo struct {
 	Date time.Time
 }
 
-func keepIt(condition string, file fileInfo) bool {
+func (fi *fileInfo) canBeKept(condition string) bool {
 	e := env.NewEnv()
 
-	err := e.Define("file_age", fileAge(file.Date))
+	err := e.Define("file_age", fileAge(fi.Date))
 	if err != nil {
 		log.Fatalf("Define error: %v\n", err)
 	}
-	err = e.Define("file_time", file.Date)
+	err = e.Define("file_time", fi.Date)
 	if err != nil {
 		log.Fatalf("Define error: %v\n", err)
 	}
@@ -48,7 +48,7 @@ func keepIt(condition string, file fileInfo) bool {
 
 	result, err := vm.Execute(e, nil, fmt.Sprintf("return (%s)", condition))
 	if err != nil {
-		log.Fatalf("Execute error `%s` (%s): %v\n", condition, file, err)
+		log.Fatalf("Execute error `%s` (%s): %v\n", condition, *fi, err)
 	}
 
 	return reflect.ValueOf(result).Bool()

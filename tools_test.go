@@ -8,9 +8,9 @@ import (
 
 func TestDateInFileName(t *testing.T) {
 	dateToTest := time.Date(2021, 3, 31, 0, 0, 0, 0, time.UTC)
-	filePattern := "source-(\\d{4}-\\d{2}-\\d{2})\\.zip"
+	filePattern := "test-(\\d{4}-\\d{2}-\\d{2})\\.zip"
 	obj := fileInfo{
-		Name: fmt.Sprintf("path/subpath/chetl-source-%s.zip", dateToTest.Format("2006-01-02")),
+		Name: fmt.Sprintf("path/subpath/test-%s.zip", dateToTest.Format("2006-01-02")),
 		Date: time.Now(),
 	}
 	dt := getFileDate(obj, filePattern)
@@ -24,7 +24,7 @@ func TestDateInFileObj(t *testing.T) {
 	filePattern := ""
 	today := time.Now()
 	obj := fileInfo{
-		Name: fmt.Sprintf("path/subpath/chetl-source-%s.zip", dateToTest.Format("2006-01-02")),
+		Name: fmt.Sprintf("path/subpath/test-%s.zip", dateToTest.Format("2006-01-02")),
 		Date: today,
 	}
 	dt := getFileDate(obj, filePattern)
